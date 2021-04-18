@@ -17,6 +17,7 @@ package com.example.android.architecture.blueprints.todoapp.tasks
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.databinding.ObservableField
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
@@ -41,8 +42,8 @@ import kotlinx.coroutines.launch
  * ViewModel for the task list screen.
  */
 class TasksViewModel(
-    private val tasksRepository: TasksRepository,
-    private val savedStateHandle: SavedStateHandle
+        private val tasksRepository: TasksRepository,
+        private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _forceUpdate = MutableLiveData<Boolean>(false)
@@ -56,6 +57,12 @@ class TasksViewModel(
             }
         }
         tasksRepository.observeTasks().distinctUntilChanged().switchMap { filterTasks(it) }
+    }
+
+    val deleteQueue = HashMap<Int, ObservableField<DelData>>()
+
+    class DelData(val task: Task) {
+        var timer: Int = 0
     }
 
     val items: LiveData<List<Task>> = _items
@@ -89,6 +96,9 @@ class TasksViewModel(
 
     private var resultMessageShown: Boolean = false
 
+    private val _deleteTask = MutableLiveData<Event<Pair<Int, Task>>>()
+    val deleteTask: LiveData<Event<Pair<Int, Task>>> = _deleteTask
+
     // This LiveData depends on another so we can use a transformation.
     val empty: LiveData<Boolean> = Transformations.map(_items) {
         it.isEmpty()
@@ -114,20 +124,20 @@ class TasksViewModel(
         when (requestType) {
             ALL_TASKS -> {
                 setFilter(
-                    R.string.label_all, R.string.no_tasks_all,
-                    R.drawable.logo_no_fill, true
+                        R.string.label_all, R.string.no_tasks_all,
+                        R.drawable.logo_no_fill, true
                 )
             }
             ACTIVE_TASKS -> {
                 setFilter(
-                    R.string.label_active, R.string.no_tasks_active,
-                    R.drawable.ic_check_circle_96dp, false
+                        R.string.label_active, R.string.no_tasks_active,
+                        R.drawable.ic_check_circle_96dp, false
                 )
             }
             COMPLETED_TASKS -> {
                 setFilter(
-                    R.string.label_completed, R.string.no_tasks_completed,
-                    R.drawable.ic_verified_user_96dp, false
+                        R.string.label_completed, R.string.no_tasks_completed,
+                        R.drawable.ic_verified_user_96dp, false
                 )
             }
         }
@@ -136,10 +146,10 @@ class TasksViewModel(
     }
 
     private fun setFilter(
-        @StringRes filteringLabelString: Int,
-        @StringRes noTasksLabelString: Int,
-        @DrawableRes noTaskIconDrawable: Int,
-        tasksAddVisible: Boolean
+            @StringRes filteringLabelString: Int,
+            @StringRes noTasksLabelString: Int,
+            @DrawableRes noTaskIconDrawable: Int,
+            tasksAddVisible: Boolean
     ) {
         _currentFilteringLabel.value = filteringLabelString
         _noTasksLabel.value = noTasksLabelString
@@ -163,6 +173,29 @@ class TasksViewModel(
             showSnackbarMessage(R.string.task_marked_active)
         }
     }
+
+    /**
+     *
+     * Delete task
+     */
+    fun deleteTask(task: Task) = viewModelScope.launch {
+        tasksRepository.deleteTask(task.id)
+    }
+
+
+    fun deleteTast(task: Task, position: Int) {
+        _deleteTask.value = Event(Pair(position, task))
+    }
+
+    fun startDeleteTimer(position: Int, task: Task) {
+        deleteQueue.set(position, ObservableField(DelData(task)))
+    }
+
+    fun removeFromTimer(position: Int, task: Task) {
+        deleteQueue[position] = ObservableField(null)
+        deleteQueue.remove(position)
+    }
+
 
     /**
      * Called by the Data Binding library and the FAB's click listener.
@@ -232,14 +265,35 @@ class TasksViewModel(
             }
         }
         return tasksToShow
-        }
+    }
 
     fun refresh() {
         _forceUpdate.value = true
     }
 
-    private fun getSavedFilterType() : TasksFilterType {
+    private fun getSavedFilterType(): TasksFilterType {
         return savedStateHandle.get(TASKS_FILTER_SAVED_STATE_KEY) ?: ALL_TASKS
+    }
+
+    fun tick() = viewModelScope.launch {
+        val toRemove = mutableListOf<Pair<Int, Task>>()
+
+
+        deleteQueue.entries.map { (position, taskToDelete) ->
+            taskToDelete.get()?.let {
+                it.timer += 1
+                if (it.timer >= TasksFragment.UNDO_TIMER) {
+                    toRemove.add(Pair(position, it.task))
+                }
+            }
+        }
+
+        toRemove.forEach {
+            removeFromTimer(it.first, it.second)
+            tasksRepository.deleteTask(it.second.id)
+            _deleteTask.value = Event(Pair(it.first, it.second))
+
+        }
     }
 }
 

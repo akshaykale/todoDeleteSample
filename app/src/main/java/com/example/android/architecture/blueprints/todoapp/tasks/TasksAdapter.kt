@@ -15,7 +15,9 @@
  */
 package com.example.android.architecture.blueprints.todoapp.tasks
 
+import android.os.CountDownTimer
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -28,12 +30,49 @@ import com.example.android.architecture.blueprints.todoapp.tasks.TasksAdapter.Vi
  * Adapter for the task list. Has a reference to the [TasksViewModel] to send actions back to it.
  */
 class TasksAdapter(private val viewModel: TasksViewModel) :
-    ListAdapter<Task, ViewHolder>(TaskDiffCallback()) {
+        ListAdapter<Task, ViewHolder>(TaskDiffCallback()) {
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
 
-        holder.bind(viewModel, item)
+        holder.apply {
+
+            if (timer != null) {
+                timer?.cancel()
+            }
+
+            timer = object : CountDownTimer(3000, 100) {
+                override fun onTick(millisUntilFinished: Long) {
+                    binding.timerText.text = "Undo in ${((millisUntilFinished) / 1).toInt()}..."
+                }
+
+                override fun onFinish() {
+                    if (!isTicking) return
+                    viewModel.deleteTask(item)
+                    binding.deleteContainer.gone()
+                    binding.deleteBt.visible()
+                    removeItem(position, item)
+
+                }
+            }
+
+            binding.deleteBt.setOnClickListener {
+                isTicking = true
+                timer?.start()
+                it.gone()
+                binding.deleteContainer.visible()
+            }
+
+            binding.undoButton.setOnClickListener {
+                if (isTicking) {
+                    isTicking = false //imp. because calling cancle() wont prevent a onFinish() call on timer finished.
+                    timer?.cancel()
+                }
+                binding.deleteContainer.visibility = View.GONE
+            }
+
+            bind(viewModel, item)
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -41,7 +80,11 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
     }
 
     class ViewHolder private constructor(val binding: TaskItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+            RecyclerView.ViewHolder(binding.root) {
+
+        var timer: CountDownTimer? = null
+        var isTicking: Boolean = false
+
 
         fun bind(viewModel: TasksViewModel, item: Task) {
 
@@ -59,6 +102,22 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
             }
         }
     }
+
+    fun removeItem(position: Int, task: Task) {
+        if (currentList.size > position && task.id != currentList[position].id) { // Some mismatch we should not remove
+            return
+        }
+        notifyItemRemoved(position)
+        notifyItemRangeChanged(position, currentList.size)
+    }
+}
+
+private fun View.visible() {
+    visibility = View.VISIBLE
+}
+
+private fun View.gone() {
+    visibility = View.GONE
 }
 
 /**

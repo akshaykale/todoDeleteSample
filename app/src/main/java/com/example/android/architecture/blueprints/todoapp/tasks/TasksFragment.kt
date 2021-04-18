@@ -17,6 +17,7 @@
 package com.example.android.architecture.blueprints.todoapp.tasks
 
 import android.os.Bundle
+import android.os.Handler
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -39,6 +40,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import timber.log.Timber
 
+
 /**
  * Display a grid of [Task]s. User can choose to view all, active or completed tasks.
  */
@@ -52,10 +54,17 @@ class TasksFragment : Fragment() {
 
     private lateinit var listAdapter: TasksAdapter
 
+    private val handler = Handler()
+    private lateinit var runnable: Runnable
+
+    companion object {
+        const val UNDO_TIMER = 3
+    }
+
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View? {
         viewDataBinding = TasksFragBinding.inflate(inflater, container, false).apply {
             viewmodel = viewModel
@@ -65,21 +74,21 @@ class TasksFragment : Fragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem) =
-        when (item.itemId) {
-            R.id.menu_clear -> {
-                viewModel.clearCompletedTasks()
-                true
+            when (item.itemId) {
+                R.id.menu_clear -> {
+                    viewModel.clearCompletedTasks()
+                    true
+                }
+                R.id.menu_filter -> {
+                    showFilteringPopUpMenu()
+                    true
+                }
+                R.id.menu_refresh -> {
+                    viewModel.loadTasks(true)
+                    true
+                }
+                else -> false
             }
-            R.id.menu_filter -> {
-                showFilteringPopUpMenu()
-                true
-            }
-            R.id.menu_refresh -> {
-                viewModel.loadTasks(true)
-                true
-            }
-            else -> false
-        }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.tasks_fragment_menu, menu)
@@ -95,6 +104,13 @@ class TasksFragment : Fragment() {
         setupRefreshLayout(viewDataBinding.refreshLayout, viewDataBinding.tasksList)
         setupNavigation()
         setupFab()
+        //deleteListeners()
+    }
+
+    private fun deleteListeners() {
+        viewModel.deleteTask.observe(this, EventObserver { (position, task) ->
+            listAdapter.removeItem(position, task)
+        })
     }
 
     private fun setupNavigation() {
@@ -120,11 +136,11 @@ class TasksFragment : Fragment() {
 
             setOnMenuItemClickListener {
                 viewModel.setFiltering(
-                    when (it.itemId) {
-                        R.id.active -> TasksFilterType.ACTIVE_TASKS
-                        R.id.completed -> TasksFilterType.COMPLETED_TASKS
-                        else -> TasksFilterType.ALL_TASKS
-                    }
+                        when (it.itemId) {
+                            R.id.active -> TasksFilterType.ACTIVE_TASKS
+                            R.id.completed -> TasksFilterType.COMPLETED_TASKS
+                            else -> TasksFilterType.ALL_TASKS
+                        }
                 )
                 true
             }
@@ -142,10 +158,10 @@ class TasksFragment : Fragment() {
 
     private fun navigateToAddNewTask() {
         val action = TasksFragmentDirections
-            .actionTasksFragmentToAddEditTaskFragment(
-                null,
-                resources.getString(R.string.add_task)
-            )
+                .actionTasksFragmentToAddEditTaskFragment(
+                        null,
+                        resources.getString(R.string.add_task)
+                )
         findNavController().navigate(action)
     }
 
@@ -162,5 +178,20 @@ class TasksFragment : Fragment() {
         } else {
             Timber.w("ViewModel not initialized when attempting to set up adapter.")
         }
+    }
+
+    override fun onResume() {
+        val delay = (UNDO_TIMER * 1000).toLong()
+        runnable = Runnable {
+            handler.postDelayed(runnable, delay)
+            viewModel.tick()
+        }
+        handler.postDelayed(runnable, delay)
+        super.onResume()
+    }
+
+    override fun onPause() {
+        handler.removeCallbacks(runnable) //stop handler when activity not visible super.onPause();
+        super.onPause()
     }
 }

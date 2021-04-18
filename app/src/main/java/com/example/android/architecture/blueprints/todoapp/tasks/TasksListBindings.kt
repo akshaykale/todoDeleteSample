@@ -16,8 +16,11 @@
 package com.example.android.architecture.blueprints.todoapp.tasks
 
 import android.graphics.Paint
+import android.view.View
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.databinding.BindingAdapter
+import androidx.databinding.ObservableField
 import androidx.recyclerview.widget.RecyclerView
 import com.example.android.architecture.blueprints.todoapp.data.Task
 
@@ -37,5 +40,17 @@ fun setStyle(textView: TextView, enabled: Boolean) {
         textView.paintFlags = textView.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
     } else {
         textView.paintFlags = textView.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+    }
+}
+
+@BindingAdapter("app:deleteTimerVisibility")
+fun deleteTimerVisibility(view: LinearLayout, taskToDelete: ObservableField<TasksViewModel.DelData>?) {
+    view.visibility = if (taskToDelete == null) View.GONE else View.VISIBLE
+}
+
+@BindingAdapter("app:timer")
+fun tickTimer(textView: TextView, taskToDelete: ObservableField<TasksViewModel.DelData>?) {
+    taskToDelete?.get()?.let {
+        textView.text = "Undo delete? ${it.timer}..."
     }
 }
