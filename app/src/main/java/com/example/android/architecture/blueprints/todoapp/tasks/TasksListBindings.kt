@@ -42,15 +42,3 @@ fun setStyle(textView: TextView, enabled: Boolean) {
         textView.paintFlags = textView.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
     }
 }
-
-@BindingAdapter("app:deleteTimerVisibility")
-fun deleteTimerVisibility(view: LinearLayout, taskToDelete: ObservableField<TasksViewModel.DelData>?) {
-    view.visibility = if (taskToDelete == null) View.GONE else View.VISIBLE
-}
-
-@BindingAdapter("app:timer")
-fun tickTimer(textView: TextView, taskToDelete: ObservableField<TasksViewModel.DelData>?) {
-    taskToDelete?.get()?.let {
-        textView.text = "Undo delete? ${it.timer}..."
-    }
-}

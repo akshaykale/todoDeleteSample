@@ -30,7 +30,7 @@ import com.example.android.architecture.blueprints.todoapp.tasks.TasksAdapter.Vi
  * Adapter for the task list. Has a reference to the [TasksViewModel] to send actions back to it.
  */
 class TasksAdapter(private val viewModel: TasksViewModel) :
-        ListAdapter<Task, ViewHolder>(TaskDiffCallback()) {
+    ListAdapter<Task, ViewHolder>(TaskDiffCallback()) {
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
