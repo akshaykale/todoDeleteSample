@@ -16,12 +16,13 @@
 package com.example.android.architecture.blueprints.todoapp.tasks
 
 import android.graphics.Paint
+import android.os.CountDownTimer
 import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
 import androidx.databinding.BindingAdapter
 import androidx.databinding.ObservableField
 import androidx.recyclerview.widget.RecyclerView
+import com.example.android.architecture.blueprints.todoapp.R
 import com.example.android.architecture.blueprints.todoapp.data.Task
 
 /**

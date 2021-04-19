@@ -17,7 +17,6 @@
 package com.example.android.architecture.blueprints.todoapp.tasks
 
 import android.os.Bundle
-import android.os.Handler
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -55,7 +54,7 @@ class TasksFragment : Fragment() {
     private lateinit var listAdapter: TasksAdapter
 
     companion object {
-        const val UNDO_TIMER = 3
+        const val UNDO_TIMER: Long = 3000
     }
 
     override fun onCreateView(
