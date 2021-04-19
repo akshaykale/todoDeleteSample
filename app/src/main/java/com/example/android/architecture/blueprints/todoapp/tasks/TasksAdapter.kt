@@ -41,21 +41,9 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
                 timer?.cancel()
             }
 
-            if (timer != null && isTicking) {
-                binding.deleteBt.gone()
-                binding.progressBar.visible()
-                binding.deleteContainer.visible()
-            } else {
-                binding.deleteBt.visible()
-                binding.progressBar.gone()
-                binding.deleteContainer.gone()
-            }
-
             timer = object : CountDownTimer(TasksFragment.UNDO_TIMER, 100) {
                 override fun onTick(millisUntilFinished: Long) {
-                    binding.timerText.text = "Undo in ${((millisUntilFinished) / 1000).toInt()}..."
                     val per = (millisUntilFinished.toFloat().div(TasksFragment.UNDO_TIMER.toFloat())).times(100)
-                    val per1 = TasksFragment.UNDO_TIMER.div(millisUntilFinished)//.times(100)
                     binding.progressBar.progress = (100 - per).toInt()
                 }
 
@@ -69,9 +57,7 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
             binding.deleteBt.setOnClickListener {
                 isTicking = true // start the timer
                 timer?.start()
-                it.gone()
-                binding.progressBar.visible()
-                binding.deleteContainer.visible()
+                viewStateDeleting()
             }
 
             binding.undoButton.setOnClickListener {
@@ -79,22 +65,29 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
                     isTicking = false //imp. because calling cancle() won't prevent a onFinish() call on timer finished.
                     timer?.cancel()
                 }
-                binding.deleteContainer.gone()
-                binding.deleteBt.visible()
-                binding.progressBar.gone()
+                viewStateReadyToDelete()
             }
 
             bind(viewModel, item)
         }
     }
 
-    private fun ViewHolder.processDelete(item: Task, position: Int) {
-        viewModel.deleteTask(item)
-        binding.deleteContainer.gone()
+    private fun ViewHolder.viewStateDeleting() {
+        binding.deleteBt.gone()
+        binding.progressBar.visible()
+        binding.undoButton.visible()
+    }
+
+    private fun ViewHolder.viewStateReadyToDelete() {
+        binding.undoButton.gone()
         binding.deleteBt.visible()
         binding.progressBar.gone()
+    }
+
+    private fun ViewHolder.processDelete(item: Task, position: Int) {
+        viewModel.deleteTask(item)
+        viewStateReadyToDelete()
         isTicking = false
-        removeItem(position, item)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -123,14 +116,6 @@ class TasksAdapter(private val viewModel: TasksViewModel) :
                 return ViewHolder(binding)
             }
         }
-    }
-
-    fun removeItem(position: Int, task: Task) {
-        if (currentList.size > position && task.id != currentList[position].id) { // Some mismatch we should not remove
-            return
-        }
-        notifyItemRemoved(position)
-        notifyItemRangeChanged(position, currentList.size)
     }
 }
 

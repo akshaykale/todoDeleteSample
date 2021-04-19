@@ -81,14 +81,6 @@
                     android:src="@drawable/ic_delete_black_24dp"
                     />
 
-                <!--<ImageView
-                    android:id="@+id/undoButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:tint="@android:color/black"
-                    android:src="@drawable/ic_undo_black_24dp"
-                    />-->
-
                 <ProgressBar
                     android:id="@+id/progressBar"
                     android:layout_width="30dp"
@@ -104,37 +96,14 @@
             </FrameLayout>
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/deleteContainer"
-            android:layout_width="match_parent"
+        <Button
+            android:id="@+id/undoButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="end"
-            android:orientation="horizontal"
-            android:paddingEnd="@dimen/activity_horizontal_margin"
-            android:paddingStart="@dimen/activity_horizontal_margin"
             android:visibility="gone"
-            tool:visibility="visible">
-
-            <TextView
-                android:id="@+id/timerText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="#000"
-                android:gravity="end|center_vertical"
-                android:layout_marginEnd="@dimen/activity_horizontal_margin"
-                android:layout_marginRight="@dimen/activity_horizontal_margin"
-                android:paddingBottom="5dp"
-                android:paddingTop="5dp"
-                 />
-
-            <Button
-                android:id="@+id/undoButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Undo" />
-
-
-        </LinearLayout>
+            android:layout_gravity="end"
+            android:layout_marginEnd="@dimen/activity_horizontal_margin"
+            android:text="Undo"
+            android:layout_marginRight="@dimen/activity_horizontal_margin" />
     </LinearLayout>
 </layout>
